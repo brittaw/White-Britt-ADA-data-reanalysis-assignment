@@ -1,0 +1,39 @@
+---
+title: "White-Britt-ADA-data-reanalysis-assignment"
+author: "BA White"
+date: "4/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Data reanalysis of: Mahler, D. L., S. M. Lambert, A. J. Geneva, J. Ng, S. B. Hedges, J. B. Losos, and R. E. Glor. 2016. Discovery of a Giant Chameleon-Like Lizard (<i>Anolis</i>) on Hispaniola and Its Significance to Understanding Replicated Adaptive Radiations. The American Naturalist 188:357–364.
+
+
+```
+#Phylogenetic Affinities
+##Goal: Determine the phylogenetic placement of the new species.
+###Step 1. Use Bayesian methods to analyze a partitioned (what), concatenated alignment of 5 nDNA loci.
+
+###Step 2. Calculate the posterior probabilities of monophyly for the new species with: members that are geographically proximate, members that share ecomorphologically space, and that geographically proximate and ecomorphologically similar species.
+
+#Ecomorphological Affinities
+##Goal: Quantify the ecomorphological similarity of new species to other anoles
+###Step 1. Calculate the Euclidean distance to every other species in a four-dimensional morphospace of traits.
+
+###Step 2. Test whether the new species forms a distinct phenotypic cluster with a specific clade (Chamaeleinides) by conducting a linear discriminant analysis (LDA) with 7 categories (1 represents the new species, 1 Chamaeleonides, then the remaining ecomorphs).  
+```
+
+
+
+
+
+
+
+
+```
+
+
+
+
