@@ -76,9 +76,12 @@ trait72sp <- traits_3 %>%
 scatter(pPCA, useLag=TRUE)
 plot(pPCA, useLag=TRUE)
 ```
-##Calculate the Euclidean distance to every other species in a four-dimensional morphospace of traits.
+##Calculate the Euclidean distance to every other species in by the first four axes of a phylogenetic PCA on traits. 
 
-##Test whether the new species forms a distinct phenotypic cluster with a specific clade (Chamaeleinides) by conducting a linear discriminant analysis (LDA) with 7 categories (1 represents the new species, 1 Chamaeleonides, then the remaining ecomorphs).   
+##Conducted a 7-category linear discriminant analysis (LDA) on traditional ecomorph class for the four cryptic
+giants in our sample (A. landestoyi, A. chamaeleonides, A. guamuhaya, A. porcus) plus
+all species assigned to one of the six traditional ecomorph classes
+
 ```
 
 
