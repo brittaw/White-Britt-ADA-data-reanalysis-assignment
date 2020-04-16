@@ -56,10 +56,13 @@ library(phytools)
 #rename column sepcies to match tree
 trait72sp <- trait72sp %>% rename("tree$tip.label" = species)
 
+#maybe this to fix error below 
+X<-as.matrix(trait72sp, row.names=1)
+
 ###build the model of phylogenetic relationships to the covariance matrix of traits to determine if 
 ### covariance occurs at a rate greater than expected by Brownian Motion
 
-pPCA <- phyl.pca(tree, trait72sp, method="BM", mode="cov")
+pPCA <- phyl.pca(tree, X, method="BM", mode="cov")
 
 ##visualize in screeplot the PCAs
 screeplot(pPCA)
