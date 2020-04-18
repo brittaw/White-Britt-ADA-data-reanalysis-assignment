@@ -3,6 +3,8 @@ title: "White-Britt-ADA-data-reanalysis-assignment"
 author: "BA White"
 date: "4/15/2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -11,70 +13,63 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Data reanalysis of: Mahler, D. L., S. M. Lambert, A. J. Geneva, J. Ng, S. B. Hedges, J. B. Losos, and R. E. Glor. 2016. Discovery of a Giant Chameleon-Like Lizard (<i>Anolis</i>) on Hispaniola and Its Significance to Understanding Replicated Adaptive Radiations. The American Naturalist 188:357–364.
 
-
-```
 #Ecomorphological Affinities
 ##Goal: Quantify the ecomorphological similarity of new species to other anoles
 ###Using pPCA Revell (2009) on a covariance matrix of log-transformed and averaged data for body size and 
-###shape residuals with the Bayesian MCC chronogram they calculated independent "size" and "shape" axes.  
-###load log-transformed and averaged data for body size and shape data 
-```df <- "Traits.csv"
-```
+###shape residuals with the Bayesian MCC chronogram they calculated independent "size" and "shape" axes. 
 ###load necessary packages for data tidying and transformation
-```library(tidyverse)
+```{r}
+library(tidyverse)
+library(phytools) 
 ```
-###rename dataframe and read csv into a tibble
-```traits <- read_csv(df, col_names = TRUE)
+###load log-transformed and averaged size and shape data renamed as a tibble
+```{r}
+traits <- read_csv("Traits.csv", col_names = TRUE)
 ```
 ###see the variables in the tibble
-```glimpse(traits)
+```{r}
+glimpse(traits)
 ```
-###The data file they provided in Dryad contains 29 more species than the data table they produced so...
-```m_sp_col <- read_csv("Mahler_species_col.csv", col_names = TRUE)
-traits_2 <- read_csv("Traits_2.csv", col_names = TRUE)
-traits_reduced <- m_sp_col %>% left_join(traits_2)
+###The Dryad "Traits.csv" contains 29 more species than their data table results and 2 species are swapped so...
+```{r}
+traits_3 <- read_csv("Traits_3.csv", col_names = TRUE)
+glimpse(traits_3)
 ```
 ###load NEXUS tree file - they specify this NEXUS tree in their README file 
-```tree <- read.nexus("5Loc_25milburn_100kthin.MCC.median.nex")
+```{r}
+tree <- read.nexus("5Loc_25milburn_100kthin.MCC.median.nex")
 ```
 ###The number of taxa in the data file and tree do not match
-```tip_label <-tibble(tree$tip.label)
-dropped_tips <- tip_label %>% 
-anti_join(traits_reduced, c("tree$tip.label" = "species"))
-```
-###the above gives a dataset of 27 tips to drop from an OG data set of 97, leaving 70. Two sp are now missing in the morph set.
-```missing_dropped_tips <- traits_reduced %>% 
-  anti_join(tip_label, c("species" = "tree$tip.label"))
-```
-###centralis and guazuma appear to not be in the tree files but are reported in the loadings table for the pPCA in the paper.
-###With this in mind I suppose I will continue with the analyses without the morph data for those species.
+```{r}
+tip_label <-tibble(tree$tip.label)
 
-#tree<-(drop.tip(tree, dropped_tips))
-#plot(tree)
-
-###now we will remove missing data from the trait morph
-```trait70sp <- traits_reduced %>% 
-semi_join(tip_label, c("species" = "tree$tip.label"))
-```
-###Nevermind, found this in supplements: 
-  #"Thus, for our comparative analyses, measurements of A. guazuma correspond to A. garridoi in the
-  #phylogeny, and measurements of A. centralis correspond to A. terueli in the phylogeny"
-```traits_3 <- read_csv("Traits_3.csv", col_names = TRUE)
-traits_reduced <- m_sp_col %>% left_join(traits_3)
-trait72sp <- traits_3 %>% 
+traits4tree <- traits_3 %>% 
   semi_join(tip_label, c("species" = "tree$tip.label"))
 ```
-###load necessary package for phylogenetic PCA
-```library(phytools)
+#Trait datadrame must be a MATRIX with species as rownames of that matrix; as required by the pPCA
+```{r}
+sp <- traits4tree$species
+t <- select(traits4tree,-species)
+t <- as.matrix(t)
+rownames(t) <- sp
 ```
 ###build the model of phylogenetic relationships to the covariance matrix of traits to determine if 
 ### covariance occurs at a rate greater than expected by Brownian Motion
-```pPCA <- phyl.pca(tree, trait70sp, method="BM", mode="cov")
+```{r}
+pruned.tree<-drop.tip(tree,tree$tip.label[-match(traits4tree$species, tree$tip.label)])
+pPCA <- phyl.pca(pruned.tree, t, method="BM", mode="cov")
+pPCA
 ```
 ###visualize in screeplot the PCAs
-```screeplot(pPCA)
-scatter(pPCA, useLag=TRUE)
-plot(pPCA, useLag=TRUE)
+```{r}
+biplot(pPCA)
+scores(pPCA)
+pPCA$L
+pPCA$Eval
+pPCA$Evec  
+summary(pPCA)
+
+
 ```
 ##Calculate the Euclidean distance to every other species in by the first four axes of a phylogenetic PCA on traits. 
 
@@ -83,15 +78,3 @@ giants in our sample (A. landestoyi, A. chamaeleonides, A. guamuhaya, A. porcus)
 all species assigned to one of the six traditional ecomorph classes
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
