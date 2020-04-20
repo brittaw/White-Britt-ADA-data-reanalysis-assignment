@@ -35,6 +35,11 @@ glimpse(traits)
 traits_3 <- read_csv("Traits_3.csv", col_names = TRUE)
 glimpse(traits_3)
 ```
+###these traits do not match what they ultimately included
+```{r}
+traits <- filter(traits_3, (c(2:12),))
+traits
+```
 ###load NEXUS tree file - they specify this NEXUS tree in their README file 
 ```{r}
 tree <- read.nexus("5Loc_25milburn_100kthin.MCC.median.nex")
@@ -62,14 +67,7 @@ pPCA
 ```
 ###visualize in screeplot the PCAs
 ```{r}
-biplot(pPCA)
-scores(pPCA)
-pPCA$L
-pPCA$Eval
-pPCA$Evec  
-summary(pPCA)
-
-
+plot(pPCA)
 ```
 ##Calculate the Euclidean distance to every other species in by the first four axes of a phylogenetic PCA on traits. 
 
