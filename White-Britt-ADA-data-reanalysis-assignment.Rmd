@@ -2,8 +2,10 @@
 title: "White-Britt-ADA-data-reanalysis-assignment"
 author: "BA White"
 date: "4/15/2020"
-output: html_document
-editor_options: 
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
   chunk_output_type: console
 ---
 
@@ -35,10 +37,10 @@ glimpse(traits)
 traits_3 <- read_csv("Traits_3.csv", col_names = TRUE)
 glimpse(traits_3)
 ```
-###these traits do not match what they ultimately included
+###these traits do not match what they ultimately included, they excluded 'AVG_lnSVL2' from the analyses.
 ```{r}
-traits <- select(traits_3, c(1, 3:13))
-traits
+traits <- select(traits_3, c(1:11,13))
+glimpse(traits)
 ```
 ###load NEXUS tree file - they specify this NEXUS tree in their README file 
 ```{r}
@@ -64,14 +66,13 @@ pruned.tree<-drop.tip(tree,tree$tip.label[-match(traits4tree$species, tree$tip.l
 ```
 ###the 'traits4tree' data have been averaged and log transformed by the original author but they still require size correction between the species pPCA. To do this we will conduct a phylogenetic regression against SVL (using phytools) then collect the residuals for each trait value. 
 ```{r}
-SVL4pgls <- select(traits4tree, Avg_lnSVL2)
+SVL4pgls <- select(traits4tree, AVG_SVL)
 SVL4pgls <- as.matrix(SVL4pgls)
 rownames(SVL4pgls) <- sp
 
 traits_as_resids <- phyl.resid(pruned.tree, SVL4pgls, t, method="BM")
-output <- matrix(unlist(traits_as_resids$resid), ncol = 11, byrow = TRUE)
-rownames(output) <- sp
 
+output <- traits_as_resids$resid
 ```
 ###build the model of phylogenetic relationships to the covariance matrix of traits to determine if 
 ### covariance occurs at a rate greater than expected by Brownian Motion
@@ -79,15 +80,49 @@ rownames(output) <- sp
 pPCA <- phyl.pca(pruned.tree, output, method="BM", mode="cov")
 pPCA
 summary(pPCA)
+pPCA$S
 ```
 ###visualize in screeplot the PCAs
 ```{r}
 plot(pPCA)
 ```
 ##Calculate the Euclidean distance to every other species in by the first four axes of a phylogenetic PCA on traits. 
+```{r}
+scores <- as_tibble(pPCA$S)
+fourscores <- select(scores, c(1:4))
+fourscores <- as.matrix(fourscores)
+rownames(fourscores) <- sp
+distance.matrix <- dist(fourscores, method = "euclidean", diag = T) 
+distance.matrix <- as.matrix(distance.matrix)
+distance.matrix <- as.tibble(distance.matrix)
+landestoyialone <- select(distance.matrix, c('landestoyi'))
+landestoyialone <- as.matrix(landestoyialone)
+rownames(landestoyialone) <- sp
+hist(distance.matrix$landestoyi, breaks = 16, right = TRUE)
 
+#The hist from Mahler et al. using dist data from supplements has a mean +0.5 greater than the hist I generated
+mahler <- read_csv("euclideanAll.csv", col_names = TRUE)
+hist(mahler$Distance,breaks = 16, right = TRUE)
+
+```
 ##Conducted a 7-category linear discriminant analysis (LDA) on traditional ecomorph class for the four cryptic
-giants in our sample (A. landestoyi, A. chamaeleonides, A. guamuhaya, A. porcus) plus
-all species assigned to one of the six traditional ecomorph classes
+##Maybe my histogram is shifted to the left commpard to the Mahler et al 2016 figure because the histogram is actually values genereated after LDA? 
+##load ecomorph designation in.
+```{r}
+ecomo <- select(mahler, c('Species','Ecomorph'))
+ecomo1 <- cbind(sp, scores)
+ecomo1 <- select(ecomo1, c(1:5)) 
+eco_scores1 <- full_join(ecomo, ecomo1, c('Species' = 'sp'))
+```
+# Linear Discriminant Analysis with Jacknifed Prediction
+```{r}
+library(MASS)
+eco.lda <- lda(Ecomorph ~ PC1 + PC2 + PC3 + PC4, data=eco_scores1)
+eco.lda
+eco.lda.values <- predict(eco.lda)
+##ldahist(data = eco.lda.values$x[,1], g=eco.lda.values$class)
+##This histogram works but I don't know the groups.
+hist(eco.lda.values$x[,1])
+```
 
 ```
