@@ -1,4 +1,4 @@
-﻿Species ,Distance,Ecomorph  
+Species ,Distance,Ecomorph  
 aliniger ,0.87,Trunk-Crown 
 allisoni ,0.65,Trunk-Crown 
 altitudinalis,1.11,Trunk-Crown
@@ -40,6 +40,7 @@ insolitus,1.1,Twig
 jubar ,1.04,Trunk-Ground 
 krugi,1.33,Grass-Bush
 lineatopus ,1.07,Trunk-Ground 
+landestoyi,0.00,Twig-Giant
 longitibialis,1.11,Trunk-Ground
 loysiana,1.14,Trunk
 lucius,1.13,Unique

@@ -13,58 +13,62 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Data reanalysis of: Mahler, D. L., S. M. Lambert, A. J. Geneva, J. Ng, S. B. Hedges, J. B. Losos, and R. E. Glor. 2016. Discovery of a Giant Chameleon-Like Lizard (<i>Anolis</i>) on Hispaniola and Its Significance to Understanding Replicated Adaptive Radiations. The American Naturalist 188:357–364.
+# Data reanalysis of: Mahler, D. L., S. M. Lambert, A. J. Geneva, J. Ng, S. B. Hedges, J. B. Losos, and R. E. Glor. 2016. Discovery of a Giant Chameleon-Like Lizard (<i>Anolis</i>) on Hispaniola and Its Significance to Understanding Replicated Adaptive Radiations. The American Naturalist 188:357–364.
 
-#Ecomorphological Affinities
-##Goal: Quantify the ecomorphological similarity of new species to other anoles
-###Using pPCA Revell (2009) on a covariance matrix of log-transformed and averaged data for body size and 
-###shape residuals with the Bayesian MCC chronogram they calculated independent "size" and "shape" axes. 
-###load necessary packages for data tidying and transformation
+SUMMARY: Mahler et al. 2016 demonstrates that a newly discovered species of anole is ecomorhpologically similar to unrelated anoles from other islands. 
+GOAL: Is <i>Anolis landestoyi</i> close to anoles with similar ecomorphology in morphological space? If yes, to what degree? 
+DATASET: 5Loc_25milburn_100kthin.MCC.median.nex and Traits.csv from http://dx.doi.org/10.5061/dryad.sf540
+ANALYSES: Bayesian Phylogenetic Methods, Posterior Probability, and analyses replicated in this text; (1) Phylogenetic Generalized Least Squares Regression [PGLS], (2) Phylogenetic Principal Component Analysis [pPCA], (3) Euclidean Distance Matrix, (4) Linear Discriminant Analysis. 
+
+# Ecomorphological Affinities
+## Goal: Quantify the ecomorphological similarity of <i>Anolis landestoyi</i> to other anoles
+### Using pPCA Revell (2009) on a covariance matrix of log-transformed and averaged data for body size and 
+### shape residuals (from a PGLS) with the Bayesian MCC chronogram they calculated independent "size" and "shape" axes. 
+### Load necessary packages for data tidying and transformation
 ```{r}
 library(tidyverse)
 library(phytools) 
 ```
-###load log-transformed and averaged size and shape data renamed as a tibble
-```{r}
-traits <- read_csv("Traits.csv", col_names = TRUE)
-```
-###see the variables in the tibble
-```{r}
-glimpse(traits)
-```
-###The Dryad "Traits.csv" contains 29 more species than their data table results and 2 species are swapped so...
+
+### The Dryad "Traits.csv" contains 29 more species than their data table results and 2 species are swapped so a data file has been altered with these changes. 
 ```{r}
 traits_3 <- read_csv("Traits_3.csv", col_names = TRUE)
 glimpse(traits_3)
 ```
-###these traits do not match what they ultimately included, they excluded 'AVG_lnSVL2' from the analyses.
+
+### Ultimately they excluded 'AVG_lnSVL2' from the trait analyses.
 ```{r}
 traits <- select(traits_3, c(1:11,13))
 glimpse(traits)
 ```
-###load NEXUS tree file - they specify this NEXUS tree in their README file 
+
+### Load NEXUS tree file - they specify this specific NEXUS tree in their README file.
 ```{r}
 tree <- read.nexus("5Loc_25milburn_100kthin.MCC.median.nex")
 ```
-###The number of taxa in the data file and tree do not match
+
+### The number of taxa in the trait data and tree do not match.
 ```{r}
 tip_label <-tibble(tree$tip.label)
 
 traits4tree <- traits %>% 
   semi_join(tip_label, c("species" = "tree$tip.label"))
 ```
-#Trait datadrame must be a MATRIX with species as rownames of that matrix; as required by the pPCA
+
+### Trait dataframe must be a MATRIX with species as rownames of that matrix; as required by the pPCA
 ```{r}
 sp <- traits4tree$species
 t <- select(traits4tree,-species)
 t <- as.matrix(t)
 rownames(t) <- sp
 ```
-###prune the branches of the tree for species not found in the morphology dataset 
+
+### Now prune the branches of the tree for species not found in the morphology dataset 
 ```{r}
 pruned.tree<-drop.tip(tree,tree$tip.label[-match(traits4tree$species, tree$tip.label)])
 ```
-###the 'traits4tree' data have been averaged and log transformed by the original author but they still require size correction between the species pPCA. To do this we will conduct a phylogenetic regression against SVL (using phytools) then collect the residuals for each trait value. 
+
+### The trait data provided in the csv have been averaged and log transformed by the original author but the data require size correction before use in the species pPCA. To do this we will conduct a phylogenetic regression of SVL against the other morphological traits (using phytools) then collect the residuals for each trait value. 
 ```{r}
 SVL4pgls <- select(traits4tree, AVG_SVL)
 SVL4pgls <- as.matrix(SVL4pgls)
@@ -74,19 +78,25 @@ traits_as_resids <- phyl.resid(pruned.tree, SVL4pgls, t, method="BM")
 
 output <- traits_as_resids$resid
 ```
-###build the model of phylogenetic relationships to the covariance matrix of traits to determine if 
-### covariance occurs at a rate greater than expected by Brownian Motion
+
+### Now we build a model of phylogenetic relationships to the covariance matrix of trait residuals to determine if covariance occurs at a rate greater than expected by Brownian Motion. The stats for the trait loadings indicate similar loading values for traits to Mahler et al. 2016 except PC2 shows much less loading for 'AVG_SVL' and generally their values are positive when mine are negative.
 ```{r}
 pPCA <- phyl.pca(pruned.tree, output, method="BM", mode="cov")
 pPCA
+```
+
+### My first 4 PC axex also account for 94% of the variation but the variance explained for PC1, PC2, and PC3 differ from Mahler et al. 2016 (supplemental table s11). Species scores are also similar except sign flipped. 
+```{r}
 summary(pPCA)
 pPCA$S
 ```
-###visualize in screeplot the PCAs
+
+### Visualize in screeplot the PCA cumulative variance explained
 ```{r}
 plot(pPCA)
 ```
-##Calculate the Euclidean distance to every other species in by the first four axes of a phylogenetic PCA on traits. 
+
+### Calculate the Euclidean distance to every other species from <i>A. landestyoi</i> by the first four axes of the phylogenetic PCA on trait residuals. My Euclidean distance values are EXTREMELY different from the authors based on the histograms. I did have to do the most guessing of packages/variables used here because it wasn't stated.
 ```{r}
 scores <- as_tibble(pPCA$S)
 fourscores <- select(scores, c(1:4))
@@ -99,30 +109,46 @@ landestoyialone <- select(distance.matrix, c('landestoyi'))
 landestoyialone <- as.matrix(landestoyialone)
 rownames(landestoyialone) <- sp
 hist(distance.matrix$landestoyi, breaks = 16, right = TRUE)
+```
 
-#The hist from Mahler et al. using dist data from supplements has a mean +0.5 greater than the hist I generated
+### The hist from Mahler et al. 2016 has a mean +0.5 greater than the hist I generated, see here: 
+```{r}
 mahler <- read_csv("euclideanAll.csv", col_names = TRUE)
 hist(mahler$Distance,breaks = 16, right = TRUE)
-
 ```
-##Conducted a 7-category linear discriminant analysis (LDA) on traditional ecomorph class for the four cryptic
-##Maybe my histogram is shifted to the left commpard to the Mahler et al 2016 figure because the histogram is actually values genereated after LDA? 
-##load ecomorph designation in.
+
+### Conducted a 7-category linear discriminant analysis (LDA) on traditional ecomorph class
+### Take the 'mahler' data to acquire ecomorph type for each species and combine with Euclidean species scores.
 ```{r}
+### PCA 4 Scores per speices + ecomorphs
 ecomo <- select(mahler, c('Species','Ecomorph'))
 ecomo1 <- cbind(sp, scores)
 ecomo1 <- select(ecomo1, c(1:5)) 
-eco_scores1 <- full_join(ecomo, ecomo1, c('Species' = 'sp'))
+eco_scores1 <- full_join(ecomo1, ecomo, c('sp' = 'Species'))
+
+### Euclidean distance from landestoyis + ecomorphs
+ecosp <- as.tibble(cbind(sp, landestoyialone))
+eco_s <- full_join(ecomo, ecosp, c('Species' = 'sp'))
+eco_s 
 ```
-# Linear Discriminant Analysis with Jacknifed Prediction
+
+# Linear Discriminant Analysis with Jacknifed Prediction - I did an LDA on values from both PCA loadings and Euclidean distance to determine to maximum component axes for class-separation 
 ```{r}
+### Using PCA loading 
 library(MASS)
 eco.lda <- lda(Ecomorph ~ PC1 + PC2 + PC3 + PC4, data=eco_scores1)
 eco.lda
 eco.lda.values <- predict(eco.lda)
-##ldahist(data = eco.lda.values$x[,1], g=eco.lda.values$class)
-##This histogram works but I don't know the groups.
 hist(eco.lda.values$x[,1])
+
+
+### with Euclidean 
+eco.lda1 <- lda(Ecomorph ~ landestoyi, data=eco_s)
+eco.lda1
+eco.lda.values1 <- predict(eco.lda)
+hist(eco.lda.values1$x[,1])
 ```
 
-```
+# Discussion
+
+The analyses in previous papers (Mahler et al. 2013 and Mahler et al. 2010) and supplements were described in enough detail that I ultimately understood the steps I needed to take but I became lost at the Euclidean Distance analyses. It is still unclear to me how Euclidean Distance was even used, just to make a histogram? and how the LDA "tested whether the new species formed a distinct phenotypic cluster with the giant Cuban chamaeleonides-clade anoles by conducting a linear discriminant analysis (LDA)". It seems like LDAs do not test groups but find ways to group things the way you ask but regardless does this mean that a statistic was ran to show the groupings formed distinct clusters? 
